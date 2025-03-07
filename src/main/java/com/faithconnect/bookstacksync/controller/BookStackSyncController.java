@@ -57,7 +57,7 @@ public class BookStackSyncController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error syncing book with ID {}: {}", id, e.getMessage(), e);
-            throw new BookStackApiException("Failed to sync book with ID " + id, e);
+            throw new BookStackApiException("Failed to sync book with ID " + id + ", Reason: " + e.getMessage(), e);
         }
     }
 

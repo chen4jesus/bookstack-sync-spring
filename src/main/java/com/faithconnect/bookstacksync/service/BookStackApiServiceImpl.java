@@ -104,31 +104,45 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             }
 
             // Add tags (if they are present)
-            if (book.getTags() != null && !book.getTags().isEmpty()) {
+           /* if (book.getTags() != null && !book.getTags().isEmpty()) {
                 // Convert tags to JSON string
                 ObjectMapper objectMapper = new ObjectMapper();
                 String tagsJson = objectMapper.writeValueAsString(book.getTags());
                 multipartRequest.add("tags", tagsJson);
-            }
+            }*/
 
             // Add cover image (if available)
-            if (book.getCover() != null && book.getImage() != null) {
+            if (book.getCover() != null && book.getCover().getUrl() != null) {
                 try {
-                    // Create a temporary file for the image
-                    Path tempFile = Files.createTempFile("book_cover_", ".jpg");
-                    Files.write(tempFile, book.getImage().getBytes());
+                    // Download the image directly using RestTemplate
+                    ResponseEntity<byte[]> imageResponse = restTemplate.exchange(
+                        book.getCover().getUrl(),
+                        HttpMethod.GET,
+                        null,
+                        byte[].class
+                    );
                     
-                    // Create a FileSystemResource from the temp file
-                    FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
-                    
-                    // Add the image to the request
-                    multipartRequest.add("image", fileResource);
-                    
-                    // Register the temp file for deletion when the JVM exits
-                    tempFile.toFile().deleteOnExit();
-                } catch (IOException e) {
-                    log.error("Error creating temporary file for image: {}", e.getMessage());
-                    throw new BookStackApiException("Failed to process image for book", e);
+                    if (imageResponse.getStatusCode().is2xxSuccessful() && imageResponse.getBody() != null) {
+                        // Create a temporary file for the image
+                        Path tempFile = Files.createTempFile("book_cover_", ".jpg");
+                        Files.write(tempFile, imageResponse.getBody());
+                        
+                        // Create a FileSystemResource from the temp file
+                        FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
+                        
+                        // Add the image to the request
+                        multipartRequest.add("image", fileResource);
+                        
+                        // Register the temp file for deletion when the JVM exits
+                        tempFile.toFile().deleteOnExit();
+
+                        log.debug("Added image to request: {}", book.getCover().getName());
+                    } else {
+                        log.warn("Failed to download image from URL: {}", book.getCover().getUrl());
+                    }
+                } catch (Exception e) {
+                    log.error("Error processing image: {}", e.getMessage(), e);
+                    // Continue without the image
                 }
             }
 
@@ -147,7 +161,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
                 return response.getBody(); // Return the created book
             } catch (HttpStatusCodeException e) {
                 // Log the response body for better debugging
-                log.error("API error response: {}", e.getResponseBodyAsString());
+                log.error("API error response ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
                 throw e;
             }
 
@@ -295,7 +309,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             return response.getBody();
         } catch (Exception e) {
             log.error("Error creating page: {}", e.getMessage(), e);
-            throw new BookStackApiException("Failed to create page", e);
+            throw new BookStackApiException("Failed to create page: " + e.getMessage(), e);
         }
     }
 
@@ -397,7 +411,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             log.info("Book sync completed successfully");
         } catch (Exception e) {
             log.error("Error syncing book: {}", e.getMessage(), e);
-            throw new BookStackApiException("Failed to sync book", e);
+            throw new BookStackApiException("Failed to sync book: " + e.getMessage(), e);
         }
     }
 
@@ -440,7 +454,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
         book.setDescription(sourceBook.getDescription());
         book.setDescriptionHtml(sourceBook.getDescriptionHtml());
         book.setContents(Collections.emptyList());
-        book.setTags(sourceBook.getTags());
+//        book.setTags(sourceBook.getTags());
         
         book.setDefaultTemplateId(sourceBook.getDefaultTemplateId());
         
@@ -451,14 +465,6 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             cover.setPath(sourceBook.getCover().getPath());
             cover.setType(sourceBook.getCover().getType());
             book.setCover(cover);
-            try {
-                // Download the image as binary data
-                byte[] imageData = new FileUtil().downloadFile(sourceBook.getCover().getUrl());
-                book.setImageData(imageData);
-            } catch (IOException e) {
-                log.error("Error downloading cover image: {}", e.getMessage(), e);
-                throw new BookStackApiException("Failed to download cover image", e);
-            }
         }
         
         return book;
