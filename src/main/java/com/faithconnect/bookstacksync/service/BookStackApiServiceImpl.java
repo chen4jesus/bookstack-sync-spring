@@ -1,17 +1,31 @@
 package com.faithconnect.bookstacksync.service;
 
 import com.faithconnect.bookstacksync.model.*;
+import com.faithconnect.bookstacksync.util.FileUtil;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.client.HttpStatusCodeException;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Service
@@ -74,22 +88,75 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     public Book createBook(Book book) {
         try {
             log.debug("Creating book in {}", destinationConfig.getBaseUrl());
+
+            // Create headers for the request
             HttpHeaders headers = createHeaders(destinationConfig);
-            HttpEntity<Book> requestEntity = new HttpEntity<>(book, headers);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA); // Set Content-Type to multipart/form-data
+
+            // Construct the MultiValueMap to hold form data
+            MultiValueMap<String, Object> multipartRequest = new LinkedMultiValueMap<>();
+            multipartRequest.add("name", book.getName()); // Add individual fields
+            multipartRequest.add("slug", book.getSlug());
+            multipartRequest.add("description", book.getDescription());
             
-            ResponseEntity<Book> response = restTemplate.exchange(
-                    destinationConfig.getBaseUrl() + "/api/books",
-                    HttpMethod.POST,
-                    requestEntity,
-                    Book.class
-            );
-            
-            return response.getBody();
+            if (book.getDefaultTemplateId() != null) {
+                multipartRequest.add("default_template_id", book.getDefaultTemplateId());
+            }
+
+            // Add tags (if they are present)
+            if (book.getTags() != null && !book.getTags().isEmpty()) {
+                // Convert tags to JSON string
+                ObjectMapper objectMapper = new ObjectMapper();
+                String tagsJson = objectMapper.writeValueAsString(book.getTags());
+                multipartRequest.add("tags", tagsJson);
+            }
+
+            // Add cover image (if available)
+            if (book.getCover() != null && book.getImage() != null) {
+                try {
+                    // Create a temporary file for the image
+                    Path tempFile = Files.createTempFile("book_cover_", ".jpg");
+                    Files.write(tempFile, book.getImage().getBytes());
+                    
+                    // Create a FileSystemResource from the temp file
+                    FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
+                    
+                    // Add the image to the request
+                    multipartRequest.add("image", fileResource);
+                    
+                    // Register the temp file for deletion when the JVM exits
+                    tempFile.toFile().deleteOnExit();
+                } catch (IOException e) {
+                    log.error("Error creating temporary file for image: {}", e.getMessage());
+                    throw new BookStackApiException("Failed to process image for book", e);
+                }
+            }
+
+            // Create an HttpEntity with the form data and headers
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(multipartRequest, headers);
+
+            try {
+                // Send the POST request
+                ResponseEntity<Book> response = restTemplate.exchange(
+                        destinationConfig.getBaseUrl() + "/api/books",
+                        HttpMethod.POST,
+                        requestEntity,
+                        Book.class
+                );
+                
+                return response.getBody(); // Return the created book
+            } catch (HttpStatusCodeException e) {
+                // Log the response body for better debugging
+                log.error("API error response: {}", e.getResponseBodyAsString());
+                throw e;
+            }
+
         } catch (Exception e) {
             log.error("Error creating book: {}", e.getMessage(), e);
             throw new BookStackApiException("Failed to create book", e);
         }
     }
+
 
     @Override
     public Book updateBook(Long id, Book book) {
@@ -265,9 +332,9 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public boolean verifyCredentials() {
         try {
-//            log.info("Verifying credentials for {}", sourceConfig.getBaseUrl());
+            log.info("Verifying credentials for {}", sourceConfig.getBaseUrl());
             listBooks();
-//            log.info("Successfully verified credentials for {}", sourceConfig.getBaseUrl());
+            log.info("Successfully verified credentials for {}", sourceConfig.getBaseUrl());
             return true;
         } catch (Exception e) {
             log.error("Failed to verify credentials for {}: {}", sourceConfig.getBaseUrl(), e.getMessage(), e);
@@ -384,10 +451,20 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             cover.setPath(sourceBook.getCover().getPath());
             cover.setType(sourceBook.getCover().getType());
             book.setCover(cover);
+            try {
+                // Download the image as binary data
+                byte[] imageData = new FileUtil().downloadFile(sourceBook.getCover().getUrl());
+                book.setImageData(imageData);
+            } catch (IOException e) {
+                log.error("Error downloading cover image: {}", e.getMessage(), e);
+                throw new BookStackApiException("Failed to download cover image", e);
+            }
         }
         
         return book;
     }
+
+
 
     private Chapter createChapterCopy(Chapter sourceChapter, Long destBookId) {
         Chapter chapter = new Chapter();

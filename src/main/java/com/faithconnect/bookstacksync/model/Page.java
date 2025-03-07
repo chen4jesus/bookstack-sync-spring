@@ -1,5 +1,6 @@
 package com.faithconnect.bookstacksync.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * A page is a content item that can be located within a book or chapter.
  */
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Page {
     private Long id;
     
@@ -18,11 +20,18 @@ public class Page {
     
     @JsonProperty("chapter_id")
     private Long chapterId;
-    
+
+    @JsonProperty("name")
     private String name;
     private String slug;
+
+    @JsonProperty("html")
     private String html;
+
+    @JsonProperty("markdown")
     private String markdown;
+
+    @JsonProperty("priority")
     private Integer priority;
     
     @JsonProperty("draft")

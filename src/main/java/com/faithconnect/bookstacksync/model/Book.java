@@ -1,9 +1,12 @@
 package com.faithconnect.bookstacksync.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -11,6 +14,7 @@ import java.util.List;
  * A book is a top-level container that can hold chapters and pages.
  */
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Book {
     private Long id;
 
@@ -44,9 +48,39 @@ public class Book {
     private Long defaultTemplateId;
     
     private List<Content> contents;
+
+    @JsonProperty("tags")
     private List<Tag> tags;
     private Cover cover;
 
+    @JsonProperty("image")
+    private String image;
+    
+    // Transient field to hold binary image data
+    @JsonIgnore
+    private byte[] imageData;
+    
+    /**
+     * Sets the image as a string (used for JSON serialization)
+     */
+    public void setImage(String image) {
+        this.image = image;
+    }
+    
+    /**
+     * Sets the image as binary data
+     */
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
+    }
+    
+    /**
+     * Gets the image data as bytes
+     */
+    @JsonIgnore
+    public byte[] getImageData() {
+        return imageData;
+    }
     
     /**
      * Represents a user in the BookStack system.
@@ -146,7 +180,9 @@ public class Book {
      */
     @Data
     public static class Tag {
+        @JsonProperty("name")
         private String name;
+        @JsonProperty("value")
         private String value;
         private Integer order;
     }
