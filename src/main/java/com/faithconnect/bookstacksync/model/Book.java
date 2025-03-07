@@ -13,8 +13,13 @@ import java.util.List;
 @Data
 public class Book {
     private Long id;
+
+    @JsonProperty("name")
     private String name;
+
     private String slug;
+
+    @JsonProperty("description")
     private String description;
     
     @JsonProperty("description_html")
@@ -41,6 +46,7 @@ public class Book {
     private List<Content> contents;
     private List<Tag> tags;
     private Cover cover;
+
     
     /**
      * Represents a user in the BookStack system.

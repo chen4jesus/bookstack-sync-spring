@@ -1,5 +1,6 @@
 package com.faithconnect.bookstacksync;
 
+import com.faithconnect.bookstacksync.interceptor.LoggingInterceptor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -15,6 +16,8 @@ public class BookstackSyncApplication {
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+                .additionalInterceptors(new LoggingInterceptor())
+                .build();
     }
 } 

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 @NoArgsConstructor
 @AllArgsConstructor
 @Component
-@ConfigurationProperties(prefix = "bookstack")
 public class BookStackConfig {
     private String baseUrl;
     private String tokenId;
@@ -25,5 +24,21 @@ public class BookStackConfig {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+    
+    public String getTokenId() {
+        return tokenId;
+    }
+
+    public void setTokenId(String tokenId) {
+        this.tokenId = tokenId;
+    }
+
+    public String getTokenSecret() {
+        return tokenSecret;
+    }
+
+    public void setTokenSecret(String tokenSecret) {
+        this.tokenSecret = tokenSecret;
     }
 }

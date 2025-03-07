@@ -21,12 +21,12 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     private final BookStackConfig sourceConfig;
     private final BookStackConfig destinationConfig;
 
-    @Autowired
-    public BookStackApiServiceImpl(BookStackConfig sourceConfig, BookStackConfig destinationConfig, RestTemplate restTemplate) {
+    public BookStackApiServiceImpl(RestTemplate restTemplate, BookStackConfig sourceConfig, BookStackConfig destinationConfig) {
+        this.restTemplate = restTemplate;
         this.sourceConfig = sourceConfig;
         this.destinationConfig = destinationConfig;
-        this.restTemplate = restTemplate;
     }
+
 
     @Override
     public List<Book> listBooks() {
@@ -265,9 +265,9 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public boolean verifyCredentials() {
         try {
-            log.info("Verifying credentials for {}", sourceConfig.getBaseUrl());
+//            log.info("Verifying credentials for {}", sourceConfig.getBaseUrl());
             listBooks();
-            log.info("Successfully verified credentials for {}", sourceConfig.getBaseUrl());
+//            log.info("Successfully verified credentials for {}", sourceConfig.getBaseUrl());
             return true;
         } catch (Exception e) {
             log.error("Failed to verify credentials for {}: {}", sourceConfig.getBaseUrl(), e.getMessage(), e);
@@ -281,20 +281,20 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public void syncBook(Long sourceBookId) {
         try {
-            log.info("Starting book sync process...");
-            log.info("Source server: {}", sourceConfig.getBaseUrl());
-            log.info("Destination server: {}", destinationConfig.getBaseUrl());
+//            log.info("Starting book sync process...");
+//            log.info("Source server: {}", sourceConfig.getBaseUrl());
+//            log.info("Destination server: {}", destinationConfig.getBaseUrl());
 
             // Verify source credentials
-            log.info("Verifying source credentials...");
+//            log.info("Verifying source credentials...");
             verifyCredentials();
             
             // Verify destination credentials
-            log.info("Verifying destination credentials...");
+//            log.info("Verifying destination credentials...");
             verifyDestinationCredentials();
 
             // Get the source book
-            log.info("Reading source book...");
+//            log.info("Reading source book...");
             Book sourceBook = getBook(sourceBookId);
             
             // Create the book in the destination

@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = RequireOneOfValidator.class)
+@Constraint(validatedBy = {RequireOneOfValidator.class})
 @Repeatable(RequireOneOfs.class)
 @Documented
 public @interface RequireOneOf {
