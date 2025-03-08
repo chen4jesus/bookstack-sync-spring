@@ -168,3 +168,119 @@ This application is built with:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
+
+## Docker Deployment
+
+This application can be easily deployed using Docker and Docker Compose. The repository includes all necessary files for a one-line deployment on any VPS server.
+
+### Prerequisites for Docker Deployment
+
+- Docker installed on your server
+- Docker Compose installed on your server
+- Git (optional, for pulling updates)
+
+### One-Line Deployment
+
+#### On Linux/macOS:
+
+```bash
+# Clone the repository (if not already done)
+git clone https://your-repository-url.git
+cd bookstack-sync-spring
+
+# Run the deployment script
+./deploy.sh
+```
+
+#### On Windows:
+
+```bash
+# Clone the repository (if not already done)
+git clone https://your-repository-url.git
+cd bookstack-sync-spring
+
+# Run the deployment script
+deploy.bat
+```
+
+### Manual Deployment Steps
+
+If you prefer to deploy manually, follow these steps:
+
+1. Clone the repository:
+   ```bash
+   git clone https://your-repository-url.git
+   cd bookstack-sync-spring
+   ```
+
+2. Create a `.env` file from the template:
+   ```bash
+   cp .env.template .env
+   ```
+
+3. Edit the `.env` file with your BookStack API credentials:
+   ```
+   # BookStack Source API Configuration
+   SOURCE_BOOKSTACK_URL=https://your-source-bookstack.com
+   SOURCE_BOOKSTACK_TOKEN_ID=your_source_token_id
+   SOURCE_BOOKSTACK_TOKEN_SECRET=your_source_token_secret
+
+   # BookStack Destination API Configuration
+   DEST_BOOKSTACK_URL=https://your-destination-bookstack.com
+   DEST_BOOKSTACK_TOKEN_ID=your_destination_token_id
+   DEST_BOOKSTACK_TOKEN_SECRET=your_destination_token_secret
+   ```
+
+4. Build and start the Docker containers:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+5. Verify the application is running:
+   ```bash
+   curl http://localhost:8080/actuator/health
+   ```
+
+### Docker Configuration
+
+The Docker setup includes:
+
+- Multi-stage build for efficient image size
+- JRE Alpine base image for minimal footprint
+- Non-root user for security
+- Health checks for monitoring
+- Volume for persistent logs
+- Environment variables for configuration
+
+### Updating the Application
+
+To update the application to the latest version:
+
+```bash
+git pull
+docker-compose up -d --build
+```
+
+### Troubleshooting
+
+If you encounter issues with the Docker deployment:
+
+1. Check the container logs:
+   ```bash
+   docker-compose logs -f
+   ```
+
+2. Verify the container is running:
+   ```bash
+   docker-compose ps
+   ```
+
+3. Check the application health:
+   ```bash
+   curl http://localhost:8080/actuator/health
+   ```
+
+4. Restart the container:
+   ```bash
+   docker-compose restart
+   ``` 

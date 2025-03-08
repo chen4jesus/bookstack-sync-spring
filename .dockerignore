@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Build files
+target/
+!target/*.jar
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.sublime-*
+
+# Logs
+logs/
+*.log
+
+# Docker files
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Environment files
+.env
+.env.*
+!.env.template
+
+# Misc
+README.md
+LICENSE
+*.md
+deploy.sh
+deploy.bat 
