@@ -1,7 +1,6 @@
 package com.faithconnect.bookstacksync.controller;
 
 import com.faithconnect.bookstacksync.model.Book;
-import com.faithconnect.bookstacksync.model.BookStackConfig;
 import com.faithconnect.bookstacksync.service.BookStackApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
