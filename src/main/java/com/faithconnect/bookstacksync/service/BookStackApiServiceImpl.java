@@ -5,6 +5,7 @@ import com.faithconnect.bookstacksync.model.*;
 import com.faithconnect.bookstacksync.util.FileUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
@@ -57,6 +58,38 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     private BookStackConfig getDestinationConfig() {
         BookStackConfig requestConfig = CredentialsInterceptor.getDestinationConfig();
         return requestConfig != null ? requestConfig : defaultDestinationConfig;
+    }
+
+    @Autowired
+    private ConfigurationService configurationService;
+
+    @Override
+    public void updateConfiguration(BookStackConfigDTO configDTO) {
+        try {
+            log.info("Updating BookStack API configuration");
+            
+            // Update source configuration
+            sourceConfig.setBaseUrl(configDTO.getSourceBaseUrl());
+            sourceConfig.setTokenId(configDTO.getSourceTokenId());
+            sourceConfig.setTokenSecret(configDTO.getSourceTokenSecret());
+            
+            // Update destination configuration
+            destinationConfig.setBaseUrl(configDTO.getDestinationBaseUrl());
+            destinationConfig.setTokenId(configDTO.getDestinationTokenId());
+            destinationConfig.setTokenSecret(configDTO.getDestinationTokenSecret());
+            
+            // Verify the new configurations
+            verifyCredentials();
+            verifyDestinationCredentials();
+            
+            // Save configuration to application.properties
+            configurationService.saveConfiguration(configDTO);
+            
+            log.info("BookStack API configuration updated successfully");
+        } catch (Exception e) {
+            log.error("Error updating configuration: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to update configuration: " + e.getMessage(), e);
+        }
     }
 
     @Override
