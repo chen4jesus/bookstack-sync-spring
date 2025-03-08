@@ -1,7 +1,6 @@
 package com.faithconnect.bookstacksync.service;
 
 import com.faithconnect.bookstacksync.model.Book;
-import com.faithconnect.bookstacksync.model.BookStackConfigDTO;
 import com.faithconnect.bookstacksync.model.Chapter;
 import com.faithconnect.bookstacksync.model.Page;
 
@@ -12,8 +11,6 @@ import java.util.List;
  */
 public interface BookStackApiService {
 
-    void updateConfiguration(BookStackConfigDTO configDTO);
-    
     // Book operations
     /**
      * List all books.

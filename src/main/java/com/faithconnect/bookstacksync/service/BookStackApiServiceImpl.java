@@ -60,38 +60,6 @@ public class BookStackApiServiceImpl implements BookStackApiService {
         return requestConfig != null ? requestConfig : defaultDestinationConfig;
     }
 
-    @Autowired
-    private ConfigurationService configurationService;
-
-    @Override
-    public void updateConfiguration(BookStackConfigDTO configDTO) {
-        try {
-            log.info("Updating BookStack API configuration");
-            
-            // Update source configuration
-            sourceConfig.setBaseUrl(configDTO.getSourceBaseUrl());
-            sourceConfig.setTokenId(configDTO.getSourceTokenId());
-            sourceConfig.setTokenSecret(configDTO.getSourceTokenSecret());
-            
-            // Update destination configuration
-            destinationConfig.setBaseUrl(configDTO.getDestinationBaseUrl());
-            destinationConfig.setTokenId(configDTO.getDestinationTokenId());
-            destinationConfig.setTokenSecret(configDTO.getDestinationTokenSecret());
-            
-            // Verify the new configurations
-            verifyCredentials();
-            verifyDestinationCredentials();
-            
-            // Save configuration to application.properties
-            configurationService.saveConfiguration(configDTO);
-            
-            log.info("BookStack API configuration updated successfully");
-        } catch (Exception e) {
-            log.error("Error updating configuration: {}", e.getMessage(), e);
-            throw new BookStackApiException("Failed to update configuration: " + e.getMessage(), e);
-        }
-    }
-
     @Override
     public List<Book> listBooks() {
         try {
@@ -472,9 +440,9 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public boolean verifyCredentials() {
         try {
-            log.info("Verifying credentials for {}", getSourceConfig().getBaseUrl());
+            log.debug("Verifying credentials for {}", getSourceConfig().getBaseUrl());
             listBooks();
-            log.info("Successfully verified credentials for {}", getSourceConfig().getBaseUrl());
+            log.debug("Successfully verified credentials for {}", getSourceConfig().getBaseUrl());
             return true;
         } catch (Exception e) {
             log.error("Failed to verify credentials for {}: {}", getSourceConfig().getBaseUrl(), e.getMessage(), e);
@@ -488,7 +456,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public boolean verifyDestinationCredentials() {
         try {
-            log.info("Verifying credentials for {}", getDestinationConfig().getBaseUrl());
+            log.debug("Verifying credentials for {}", getDestinationConfig().getBaseUrl());
             HttpHeaders headers = createHeaders(getDestinationConfig());
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
             
@@ -499,7 +467,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
                     new ParameterizedTypeReference<ListResponse<Book>>() {}
             );
             
-            log.info("Successfully verified credentials for {}", getDestinationConfig().getBaseUrl());
+            log.debug("Successfully verified credentials for {}", getDestinationConfig().getBaseUrl());
             return true;
         } catch (Exception e) {
             log.error("Failed to verify credentials for {}: {}", getDestinationConfig().getBaseUrl(), e.getMessage(), e);
@@ -526,7 +494,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             Book sourceBook = getBook(sourceBookId);
             
             // Create the book in the destination
-            log.info("Creating book in destination...");
+            log.info("Creating book in destination... " + sourceBook.getName());
             Book destBook = createBook(createBookCopy(sourceBook));
 
             // Process chapters and pages
