@@ -1,6 +1,7 @@
 package com.faithconnect.bookstacksync.controller;
 
 import com.faithconnect.bookstacksync.model.Book;
+import com.faithconnect.bookstacksync.model.BookStackConfig;
 import com.faithconnect.bookstacksync.service.BookStackApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,8 +66,19 @@ public class BookStackSyncController {
     public ResponseEntity<Map<String, Boolean>> verifyCredentials() {
         try {
             boolean sourceValid = bookStackApiService.verifyCredentials();
+            
+            // Verify destination credentials if they are provided
+            boolean destinationValid = false;
+            try {
+                destinationValid = bookStackApiService.verifyDestinationCredentials();
+            } catch (Exception e) {
+                log.warn("Error verifying destination credentials: {}", e.getMessage());
+                // We don't throw an exception here, just mark as invalid
+            }
+            
             Map<String, Boolean> response = new HashMap<>();
             response.put("sourceCredentialsValid", sourceValid);
+            response.put("destinationCredentialsValid", destinationValid);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error verifying credentials: {}", e.getMessage(), e);

@@ -161,11 +161,18 @@ public interface BookStackApiService {
     
     // Verification
     /**
-     * Verify that the API credentials are valid.
+     * Verify that the source API credentials are valid.
      *
      * @return true if the credentials are valid, false otherwise
      */
     boolean verifyCredentials();
+    
+    /**
+     * Verify that the destination API credentials are valid.
+     *
+     * @return true if the credentials are valid, false otherwise
+     */
+    boolean verifyDestinationCredentials();
     
     // Sync operation
     /**

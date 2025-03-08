@@ -1,5 +1,6 @@
 package com.faithconnect.bookstacksync.service;
 
+import com.faithconnect.bookstacksync.interceptor.CredentialsInterceptor;
 import com.faithconnect.bookstacksync.model.*;
 import com.faithconnect.bookstacksync.util.FileUtil;
 import jakarta.annotation.Resource;
@@ -33,19 +34,35 @@ import java.nio.charset.StandardCharsets;
 public class BookStackApiServiceImpl implements BookStackApiService {
 
     private final RestTemplate restTemplate;  
-    private final BookStackConfig sourceConfig;
-    private final BookStackConfig destinationConfig;
+    private final BookStackConfig defaultSourceConfig;
+    private final BookStackConfig defaultDestinationConfig;
 
     public BookStackApiServiceImpl(RestTemplate restTemplate, BookStackConfig sourceConfig, BookStackConfig destinationConfig) {
         this.restTemplate = restTemplate;
-        this.sourceConfig = sourceConfig;
-        this.destinationConfig = destinationConfig;
+        this.defaultSourceConfig = sourceConfig;
+        this.defaultDestinationConfig = destinationConfig;
     }
 
+    /**
+     * Get the source configuration, prioritizing request headers over default config
+     */
+    private BookStackConfig getSourceConfig() {
+        BookStackConfig requestConfig = CredentialsInterceptor.getSourceConfig();
+        return requestConfig != null ? requestConfig : defaultSourceConfig;
+    }
+
+    /**
+     * Get the destination configuration, prioritizing request headers over default config
+     */
+    private BookStackConfig getDestinationConfig() {
+        BookStackConfig requestConfig = CredentialsInterceptor.getDestinationConfig();
+        return requestConfig != null ? requestConfig : defaultDestinationConfig;
+    }
 
     @Override
     public List<Book> listBooks() {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Listing books from {}", sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -67,6 +84,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Book getBook(Long id) {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Getting book with ID {} from {}", id, sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -88,6 +106,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Book createBook(Book book) {
         try {
+            BookStackConfig destinationConfig = getDestinationConfig();
             log.debug("Creating book in {}", destinationConfig.getBaseUrl());
 
             // Create headers for the request
@@ -188,6 +207,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public List<Chapter> listChapters(Long bookId) {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Listing chapters for book ID {} from {}", bookId, sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -209,6 +229,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Chapter getChapter(Long id) {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Getting chapter with ID {} from {}", id, sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -230,6 +251,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Chapter createChapter(Chapter chapter) {
         try {
+            BookStackConfig destinationConfig = getDestinationConfig();
             log.debug("Creating chapter in {}", destinationConfig.getBaseUrl());
 
             // Create headers for the request
@@ -285,6 +307,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public List<Page> listPages(Long bookId) {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Listing pages for book ID {} from {}", bookId, sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -311,6 +334,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Page getPage(Long id) {
         try {
+            BookStackConfig sourceConfig = getSourceConfig();
             log.debug("Getting page with ID {} from {}", id, sourceConfig.getBaseUrl());
             HttpHeaders headers = createHeaders(sourceConfig);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
@@ -332,6 +356,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public Page createPage(Page page) {
         try {
+            BookStackConfig destinationConfig = getDestinationConfig();
             log.debug("Creating page in {}", destinationConfig.getBaseUrl());
             // Create headers for the request
             HttpHeaders headers = createHeaders(destinationConfig);
@@ -414,31 +439,52 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     @Override
     public boolean verifyCredentials() {
         try {
-            log.info("Verifying credentials for {}", sourceConfig.getBaseUrl());
+            log.info("Verifying credentials for {}", getSourceConfig().getBaseUrl());
             listBooks();
-            log.info("Successfully verified credentials for {}", sourceConfig.getBaseUrl());
+            log.info("Successfully verified credentials for {}", getSourceConfig().getBaseUrl());
             return true;
         } catch (Exception e) {
-            log.error("Failed to verify credentials for {}: {}", sourceConfig.getBaseUrl(), e.getMessage(), e);
+            log.error("Failed to verify credentials for {}: {}", getSourceConfig().getBaseUrl(), e.getMessage(), e);
             if (e instanceof HttpClientErrorException.Unauthorized) {
-                throw new BookStackApiException("Invalid API credentials for " + sourceConfig.getBaseUrl(), e);
+                throw new BookStackApiException("Invalid API credentials for " + getSourceConfig().getBaseUrl(), e);
             }
-            throw new BookStackApiException("Failed to verify credentials for " + sourceConfig.getBaseUrl(), e);
+            throw new BookStackApiException("Failed to verify credentials for " + getSourceConfig().getBaseUrl(), e);
+        }
+    }
+
+    @Override
+    public boolean verifyDestinationCredentials() {
+        try {
+            log.info("Verifying credentials for {}", getDestinationConfig().getBaseUrl());
+            HttpHeaders headers = createHeaders(getDestinationConfig());
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+            
+            ResponseEntity<ListResponse<Book>> response = restTemplate.exchange(
+                    getDestinationConfig().getBaseUrl() + "/api/books",
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<ListResponse<Book>>() {}
+            );
+            
+            log.info("Successfully verified credentials for {}", getDestinationConfig().getBaseUrl());
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to verify credentials for {}: {}", getDestinationConfig().getBaseUrl(), e.getMessage(), e);
+            if (e instanceof HttpClientErrorException.Unauthorized) {
+                throw new BookStackApiException("Invalid API credentials for " + getDestinationConfig().getBaseUrl(), e);
+            }
+            throw new BookStackApiException("Failed to verify credentials for " + getDestinationConfig().getBaseUrl(), e);
         }
     }
 
     @Override
     public void syncBook(Long sourceBookId) {
         try {
-//            log.info("Starting book sync process...");
-//            log.info("Source server: {}", sourceConfig.getBaseUrl());
-//            log.info("Destination server: {}", destinationConfig.getBaseUrl());
+            log.info("Starting book sync process...");
 
-            // Verify source credentials
 //            log.info("Verifying source credentials...");
             verifyCredentials();
-            
-            // Verify destination credentials
+
 //            log.info("Verifying destination credentials...");
             verifyDestinationCredentials();
 
@@ -480,30 +526,6 @@ public class BookStackApiServiceImpl implements BookStackApiService {
         } catch (Exception e) {
             log.error("Error syncing book: {}", e.getMessage(), e);
             throw new BookStackApiException("Failed to sync book: " + e.getMessage(), e);
-        }
-    }
-
-    private boolean verifyDestinationCredentials() {
-        try {
-            log.info("Verifying credentials for {}", destinationConfig.getBaseUrl());
-            HttpHeaders headers = createHeaders(destinationConfig);
-            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-            
-            ResponseEntity<ListResponse<Book>> response = restTemplate.exchange(
-                    destinationConfig.getBaseUrl() + "/api/books",
-                    HttpMethod.GET,
-                    requestEntity,
-                    new ParameterizedTypeReference<ListResponse<Book>>() {}
-            );
-            
-            log.info("Successfully verified credentials for {}", destinationConfig.getBaseUrl());
-            return true;
-        } catch (Exception e) {
-            log.error("Failed to verify credentials for {}: {}", destinationConfig.getBaseUrl(), e.getMessage(), e);
-            if (e instanceof HttpClientErrorException.Unauthorized) {
-                throw new BookStackApiException("Invalid API credentials for " + destinationConfig.getBaseUrl(), e);
-            }
-            throw new BookStackApiException("Failed to verify credentials for " + destinationConfig.getBaseUrl(), e);
         }
     }
 
