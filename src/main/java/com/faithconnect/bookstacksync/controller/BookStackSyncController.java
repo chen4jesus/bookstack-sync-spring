@@ -1,6 +1,7 @@
 package com.faithconnect.bookstacksync.controller;
 
 import com.faithconnect.bookstacksync.model.Book;
+import com.faithconnect.bookstacksync.model.BookStackConfigDTO;
 import com.faithconnect.bookstacksync.service.BookStackApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,20 @@ public class BookStackSyncController {
     public BookStackSyncController(RestTemplate restTemplate, BookStackApiService bookStackApiService) {
         this.bookStackApiService = bookStackApiService;
         this.restTemplate = restTemplate;
+    }
+
+    @PostMapping("/config")
+    public ResponseEntity<Map<String, String>> updateConfiguration(@RequestBody BookStackConfigDTO configDTO) {
+        try {
+            bookStackApiService.updateConfiguration(configDTO);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Configuration updated successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error updating configuration: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to update configuration: " + e.getMessage(), e);
+        }
     }
 
     @GetMapping("/books")
