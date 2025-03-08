@@ -51,8 +51,9 @@ public class Page {
     
     @JsonProperty("updated_by")
     private Book.User updatedBy;
-    
-    private List<Book.Tag> tags;
+
+    @JsonProperty("tags")
+    private List<Tag> tags;
     
     /**
      * The URL to access this page in the BookStack UI.

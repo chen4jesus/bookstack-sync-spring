@@ -1,10 +1,6 @@
 package com.faithconnect.bookstacksync.controller;
 
-import com.faithconnect.bookstacksync.model.Book;
-import com.faithconnect.bookstacksync.model.Chapter;
-import com.faithconnect.bookstacksync.model.CreateBookRequest;
-import com.faithconnect.bookstacksync.model.Page;
-import com.faithconnect.bookstacksync.model.UpdateBookRequest;
+import com.faithconnect.bookstacksync.model.*;
 import com.faithconnect.bookstacksync.service.BookStackApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,9 +89,9 @@ public class BookController {
             
             // Convert tags if provided
             if (request.getTags() != null && !request.getTags().isEmpty()) {
-                List<Book.Tag> tags = request.getTags().stream()
+                List<Tag> tags = request.getTags().stream()
                         .map(tagDto -> {
-                            Book.Tag tag = new Book.Tag();
+                            Tag tag = new Tag();
                             tag.setName(tagDto.getName());
                             tag.setValue(tagDto.getValue());
                             tag.setOrder(tagDto.getOrder());
@@ -149,9 +145,9 @@ public class BookController {
             
             // Update tags if provided
             if (request.getTags() != null) {
-                List<Book.Tag> tags = request.getTags().stream()
+                List<Tag> tags = request.getTags().stream()
                         .map(tagDto -> {
-                            Book.Tag tag = new Book.Tag();
+                            Tag tag = new Tag();
                             tag.setName(tagDto.getName());
                             tag.setValue(tagDto.getValue());
                             tag.setOrder(tagDto.getOrder());

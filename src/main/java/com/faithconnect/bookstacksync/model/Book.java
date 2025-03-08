@@ -104,12 +104,12 @@ public class Book {
         }
         
         // Alternative constructor for numeric values as integers
-        @JsonCreator
-        public static User fromInt(Integer id) {
+       /* @JsonCreator
+        public static User fromInt(@JsonProperty("id") Integer id) {
             User user = new User();
             user.setId(id.longValue());
             return user;
-        }
+        }*/
     }
     
     /**
@@ -173,18 +173,6 @@ public class Book {
         private String updatedAt;
         
         private String url;
-    }
-    
-    /**
-     * Represents a tag associated with a book.
-     */
-    @Data
-    public static class Tag {
-        @JsonProperty("name")
-        private String name;
-        @JsonProperty("value")
-        private String value;
-        private Integer order;
     }
     
     /**

@@ -13,10 +13,15 @@ public class Chapter {
     
     @JsonProperty("book_id")
     private Long bookId;
-    
+
+    @JsonProperty("name")
     private String name;
     private String slug;
+    @JsonProperty("description")
     private String description;
+    @JsonProperty("description_html")
+    private String descriptionHtml;
+    @JsonProperty("priority")
     private Integer priority;
     
     @JsonProperty("created_at")
@@ -32,5 +37,10 @@ public class Chapter {
     private Book.User updatedBy;
     
     private List<Book.PageSummary> pages;
-    private List<Book.Tag> tags;
+
+    @JsonProperty("tags")
+    private List<Tag> tags;
+
+    @JsonProperty("default_template_id")
+    private Long defaultTemplateId;
 } 

@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,20 +97,22 @@ public class BookStackApiServiceImpl implements BookStackApiService {
             // Construct the MultiValueMap to hold form data
             MultiValueMap<String, Object> multipartRequest = new LinkedMultiValueMap<>();
             multipartRequest.add("name", book.getName()); // Add individual fields
-            multipartRequest.add("slug", book.getSlug());
-            multipartRequest.add("description", book.getDescription());
-            
+            multipartRequest.add("description", book.getDescription()); // Add individual fields
+            multipartRequest.add("description_html", book.getDescriptionHtml()); // Add individual fields
+
             if (book.getDefaultTemplateId() != null) {
                 multipartRequest.add("default_template_id", book.getDefaultTemplateId());
             }
 
             // Add tags (if they are present)
-           /* if (book.getTags() != null && !book.getTags().isEmpty()) {
-                // Convert tags to JSON string
-                ObjectMapper objectMapper = new ObjectMapper();
-                String tagsJson = objectMapper.writeValueAsString(book.getTags());
-                multipartRequest.add("tags", tagsJson);
-            }*/
+            if (book.getTags() != null && !book.getTags().isEmpty()) {
+                for (int i = 0; i < book.getTags().size(); i++) {
+                    Tag tag = book.getTags().get(i);
+                    multipartRequest.add("tags[" + i + "][name]", tag.getName());
+                    multipartRequest.add("tags[" + i + "][value]", tag.getValue());
+                    multipartRequest.add("tags[" + i + "][order]", tag.getOrder());
+                }
+            }
 
             // Add cover image (if available)
             if (book.getCover() != null && book.getCover().getUrl() != null) {
@@ -228,17 +231,51 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     public Chapter createChapter(Chapter chapter) {
         try {
             log.debug("Creating chapter in {}", destinationConfig.getBaseUrl());
+
+            // Create headers for the request
             HttpHeaders headers = createHeaders(destinationConfig);
-            HttpEntity<Chapter> requestEntity = new HttpEntity<>(chapter, headers);
-            
-            ResponseEntity<Chapter> response = restTemplate.exchange(
-                    destinationConfig.getBaseUrl() + "/api/chapters",
-                    HttpMethod.POST,
-                    requestEntity,
-                    Chapter.class
-            );
-            
-            return response.getBody();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA); // Set Content-Type to multipart/form-data
+
+            // Construct the MultiValueMap to hold form data
+            MultiValueMap<String, Object> multipartRequest = new LinkedMultiValueMap<>();
+            multipartRequest.add("book_id", chapter.getBookId()); // Add individual fields
+            multipartRequest.add("name", chapter.getName()); // Add individual fields
+            multipartRequest.add("description", chapter.getDescription()); // Add individual fields
+            multipartRequest.add("description_html", chapter.getDescriptionHtml()); // Add individual fields
+
+            if (chapter.getDefaultTemplateId() != null) {
+                multipartRequest.add("default_template_id", chapter.getDefaultTemplateId());
+            }
+
+            // Add tags (if they are present)
+            if (chapter.getTags() != null && !chapter.getTags().isEmpty()) {
+                for (int i = 0; i < chapter.getTags().size(); i++) {
+                    Tag tag = chapter.getTags().get(i);
+                    multipartRequest.add("tags[" + i + "][name]", tag.getName());
+                    multipartRequest.add("tags[" + i + "][value]", tag.getValue());
+                    multipartRequest.add("tags[" + i + "][order]", tag.getOrder());
+                }
+            }
+
+            // Create an HttpEntity with the form data and headers
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(multipartRequest, headers);
+
+            try {
+                // Send the POST request
+                ResponseEntity<Chapter> response = restTemplate.exchange(
+                        destinationConfig.getBaseUrl() + "/api/chapters",
+                        HttpMethod.POST,
+                        requestEntity,
+                        Chapter.class
+                );
+
+                return response.getBody(); // Return the created chapter
+            } catch (HttpStatusCodeException e) {
+                // Log the response body for better debugging
+                log.error("API error response ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
+                throw e;
+            }
+
         } catch (Exception e) {
             log.error("Error creating chapter: {}", e.getMessage(), e);
             throw new BookStackApiException("Failed to create chapter", e);
@@ -296,17 +333,48 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     public Page createPage(Page page) {
         try {
             log.debug("Creating page in {}", destinationConfig.getBaseUrl());
+            // Create headers for the request
             HttpHeaders headers = createHeaders(destinationConfig);
-            HttpEntity<Page> requestEntity = new HttpEntity<>(page, headers);
-            
-            ResponseEntity<Page> response = restTemplate.exchange(
-                    destinationConfig.getBaseUrl() + "/api/pages",
-                    HttpMethod.POST,
-                    requestEntity,
-                    Page.class
-            );
-            
-            return response.getBody();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA); // Set Content-Type to multipart/form-data
+
+            // Construct the MultiValueMap to hold form data
+            MultiValueMap<String, Object> multipartRequest = new LinkedMultiValueMap<>();
+            multipartRequest.add("book_id", page.getBookId()); // Add individual fields
+            multipartRequest.add("chapter_id", page.getChapterId()); // Add individual fields
+            multipartRequest.add("name", page.getName()); // Add individual fields
+            multipartRequest.add("html", page.getHtml()); // Add individual fields
+            multipartRequest.add("markdown", page.getMarkdown()); // Add individual fields
+            multipartRequest.add("priority", page.getPriority()); // Add individual fields
+
+            // Add tags (if they are present)
+            if (page.getTags() != null && !page.getTags().isEmpty()) {
+                for (int i = 0; i < page.getTags().size(); i++) {
+                    Tag tag = page.getTags().get(i);
+                    multipartRequest.add("tags[" + i + "][name]", tag.getName());
+                    multipartRequest.add("tags[" + i + "][value]", tag.getValue());
+                    multipartRequest.add("tags[" + i + "][order]", tag.getOrder());
+                }
+            }
+
+            // Create an HttpEntity with the form data and headers
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(multipartRequest, headers);
+
+            try {
+                // Send the POST request
+                ResponseEntity<Page> response = restTemplate.exchange(
+                        destinationConfig.getBaseUrl() + "/api/pages",
+                        HttpMethod.POST,
+                        requestEntity,
+                        Page.class
+                );
+
+                return response.getBody(); // Return the created chapter
+            } catch (HttpStatusCodeException e) {
+                // Log the response body for better debugging
+                log.error("API error response ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
+                throw e;
+            }
+
         } catch (Exception e) {
             log.error("Error creating page: {}", e.getMessage(), e);
             throw new BookStackApiException("Failed to create page: " + e.getMessage(), e);
@@ -454,7 +522,7 @@ public class BookStackApiServiceImpl implements BookStackApiService {
         book.setDescription(sourceBook.getDescription());
         book.setDescriptionHtml(sourceBook.getDescriptionHtml());
         book.setContents(Collections.emptyList());
-//        book.setTags(sourceBook.getTags());
+        book.setTags(sourceBook.getTags());
         
         book.setDefaultTemplateId(sourceBook.getDefaultTemplateId());
         
