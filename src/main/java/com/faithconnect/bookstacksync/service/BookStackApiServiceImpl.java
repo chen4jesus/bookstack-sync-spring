@@ -72,6 +72,28 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     }
 
     @Override
+    public List<Book> listDestinationBooks() {
+        try {
+            BookStackConfig destinationConfig = getDestinationConfig();
+            log.debug("Listing books from {}", destinationConfig.getBaseUrl());
+            HttpHeaders headers = createHeaders(destinationConfig);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            ResponseEntity<ListResponse<Book>> response = restTemplate.exchange(
+                    destinationConfig.getBaseUrl() + "/api/books",
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<ListResponse<Book>>() {}
+            );
+
+            return Objects.requireNonNull(response.getBody()).getData();
+        } catch (Exception e) {
+            log.error("Error listing books: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to list books", e);
+        }
+    }
+
+    @Override
     public Book getBook(Long id) {
         try {
             BookStackConfig sourceConfig = getSourceConfig();
@@ -191,6 +213,28 @@ public class BookStackApiServiceImpl implements BookStackApiService {
 
     @Override
     public boolean deleteBook(Long id) {
+        try {
+            BookStackConfig destinationConfig = getDestinationConfig();
+            log.debug("Deleting book with ID {} from {}", id, destinationConfig.getBaseUrl());
+            HttpHeaders headers = createHeaders(destinationConfig);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    destinationConfig.getBaseUrl() + "/api/books/" + id,
+                    HttpMethod.DELETE,
+                    requestEntity,
+                    String.class
+            );
+
+            return response.hasBody();
+        } catch (Exception e) {
+            log.error("Error deleting book with ID {}: {}", id, e.getMessage(), e);
+            throw new BookStackApiException("Failed to delete book with ID " + id, e);
+        }
+    }
+
+    @Override
+    public boolean cleanupRecycle(long id) {
         return false;
     }
 

@@ -18,7 +18,9 @@ public interface BookStackApiService {
      * @return A list of all books
      */
     List<Book> listBooks();
-    
+
+    List<Book> listDestinationBooks();
+
     /**
      * Get a book by ID.
      *
@@ -51,7 +53,15 @@ public interface BookStackApiService {
      * @return true if the book was deleted successfully, false otherwise
      */
     boolean deleteBook(Long id);
-    
+
+    /**
+     * clean up the recycle bin after deleting a book.
+     *
+     * @param id The ID of the book to delete
+     * @return true if the book was deleted successfully, false otherwise
+     */
+    boolean cleanupRecycle(long id);
+
     // Chapter operations
     /**
      * List all chapters in a book.

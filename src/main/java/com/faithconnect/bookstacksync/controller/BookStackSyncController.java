@@ -37,6 +37,16 @@ public class BookStackSyncController {
         }
     }
 
+    @GetMapping("/destination/books")
+    public ResponseEntity<List<Book>> listDestinationBooks() {
+        try {
+            return ResponseEntity.ok(bookStackApiService.listDestinationBooks());
+        } catch (Exception e) {
+            log.error("Error listing books: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to list books", e);
+        }
+    }
+
     @GetMapping("/books/{id}")
     public ResponseEntity<Book> getBook(@PathVariable Long id) {
         try {
@@ -58,6 +68,21 @@ public class BookStackSyncController {
         } catch (Exception e) {
             log.error("Error syncing book with ID {}: {}", id, e.getMessage(), e);
             throw new BookStackApiException("Failed to sync book with ID " + id + ", Reason: " + e.getMessage(), e);
+        }
+    }
+
+    @DeleteMapping("/destination/books/{id}")
+    public ResponseEntity<Map<String, String>> deleteBook(@PathVariable Long id) {
+        try {
+            bookStackApiService.deleteBook(id);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Book deletion completed successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error deleting book with ID {}: {}", id, e.getMessage(), e);
+            throw new BookStackApiException("Failed to delete book with ID " + id + ", Reason: " + e.getMessage(), e);
         }
     }
 
