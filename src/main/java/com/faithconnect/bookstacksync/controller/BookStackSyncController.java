@@ -86,6 +86,21 @@ public class BookStackSyncController {
         }
     }
 
+    @DeleteMapping("/destroy")
+    public ResponseEntity<Map<String, String>> bulkDestroy() {
+        try {
+            bookStackApiService.destroy();
+
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Bulk destroy completed successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error deleting book with ID: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to destroy the resources, Reason: " + e.getMessage(), e);
+        }
+    }
+
     @GetMapping("/verify")
     public ResponseEntity<Map<String, Boolean>> verifyCredentials() {
         try {

@@ -234,8 +234,25 @@ public class BookStackApiServiceImpl implements BookStackApiService {
     }
 
     @Override
-    public boolean cleanupRecycle(long id) {
-        return false;
+    public boolean destroy() {
+        try {
+            BookStackConfig destinationConfig = getDestinationConfig();
+            log.debug("Destroying resources from {}", destinationConfig.getBaseUrl());
+            HttpHeaders headers = createHeaders(destinationConfig);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    destinationConfig.getBaseUrl() + "/api/bulk-delete",
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class
+            );
+
+            return response.hasBody();
+        } catch (Exception e) {
+            log.error("Error destroying the resources: {}", e.getMessage(), e);
+            throw new BookStackApiException("Failed to destroy the resources ", e);
+        }
     }
 
     @Override

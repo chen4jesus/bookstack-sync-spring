@@ -54,13 +54,7 @@ public interface BookStackApiService {
      */
     boolean deleteBook(Long id);
 
-    /**
-     * clean up the recycle bin after deleting a book.
-     *
-     * @param id The ID of the book to delete
-     * @return true if the book was deleted successfully, false otherwise
-     */
-    boolean cleanupRecycle(long id);
+    boolean destroy();
 
     // Chapter operations
     /**
